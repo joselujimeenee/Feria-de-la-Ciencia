@@ -1,0 +1,90 @@
+
+int lightReading = 0;
+const int lightThreshold = 900;
+const int distThreshold = 336;
+const int motorPin1 = 5;
+const int motorPin2 = 6;
+const int motorPin3 = 10;
+const int motorPin4 = 9;
+const int triggerPin = 4;
+const int echoPin = 2;
+
+enum RobotState {
+  SEARCHING,
+  MOVING_TOWARDS_TARGET
+};
+
+RobotState robotState = SEARCHING;
+
+long readUltrasonicDistance(int triggerPin, int echoPin) {
+  pinMode(triggerPin, OUTPUT);
+  digitalWrite(triggerPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(triggerPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(triggerPin, LOW);
+  pinMode(echoPin, INPUT);
+  return pulseIn(echoPin, HIGH);
+}
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(A0, INPUT);
+  pinMode(0, OUTPUT);
+  pinMode(motorPin1, OUTPUT);
+  pinMode(motorPin2, OUTPUT);
+  pinMode(motorPin3, OUTPUT);
+  pinMode(motorPin4, OUTPUT);
+}
+
+void moveForward() {
+  digitalWrite(motorPin1, HIGH);
+  digitalWrite(motorPin2, LOW);
+  digitalWrite(motorPin3, HIGH);
+  digitalWrite(motorPin4, LOW);
+}
+
+void turnRight() {
+  digitalWrite(motorPin1, LOW);
+  digitalWrite(motorPin2, HIGH);
+  digitalWrite(motorPin3, HIGH);
+  digitalWrite(motorPin4, LOW);
+}
+
+void stopMoving() {
+  digitalWrite(motorPin1, LOW);
+  digitalWrite(motorPin2, LOW);
+  digitalWrite(motorPin3, LOW);
+  digitalWrite(motorPin4, LOW);
+}
+
+void loop() {
+  distReading = 0.01723 * readUltrasonicDistance(triggerPin, echoPin);
+  lightReading = analogRead(A0);
+  
+  Serial.print(distReading);
+  Serial.print(", ");
+  Serial.println(lightReading);
+  
+  switch (robotState) {
+    case SEARCHING:
+      if (distReading < distThreshold) {
+        robotState = MOVING_TOWARDS_TARGET;
+        moveForward();
+      } else {
+        turnRight();
+      }
+      break;
+      
+    case MOVING_TOWARDS_TARGET:
+      if (distReading >= distThreshold) {
+        robotState = SEARCHING;
+        stopMoving();
+      } else {
+        moveForward();
+      }
+      break;
+  }
+  
+  delay(1);
+}
